@@ -1,0 +1,391 @@
+﻿{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cryptoken x402 Payment Layer",
+    "version": "0.1.0",
+    "description": "Local x402 payment-required contract for selectable EVM settlement networks, selectable USDC or native-coin payment, manual wallet confirmation, and collection verification. Settlement records payment and waits for manual plan approval; it does not auto-procure tokens."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4010",
+      "description": "Local API service"
+    }
+  ],
+  "paths": {
+    "/api/x402/payment-required": {
+      "get": {
+        "summary": "Return x402 payment requirements",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "402": {
+            "description": "Payment required",
+            "headers": {
+              "PAYMENT-REQUIRED": {
+                "description": "Base64url-encoded PaymentRequired JSON",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequired"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/x402/settle": {
+      "post": {
+        "summary": "Record a wallet-confirmed x402 payment",
+        "description": "When PAYMENT-SIGNATURE or transactionHash is absent, the API returns 402 again. When present, the API records the transfer and only moves it to manual approval after network- and asset-aware receipt verification. It does not approve or execute procurement.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Base64url-encoded x402 payment payload from the wallet/client."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string"
+                  },
+                  "paymentSignature": {
+                    "type": "string"
+                  },
+                  "transactionHash": {
+                    "type": "string"
+                  },
+                  "payerAddress": {
+                    "type": "string",
+                    "pattern": "^0x[a-fA-F0-9]{40}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment recorded, waiting for manual plan approval",
+            "headers": {
+              "PAYMENT-RESPONSE": {
+                "description": "Base64url-encoded settlement response",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementEnvelope"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment signature missing",
+            "headers": {
+              "PAYMENT-REQUIRED": {
+                "description": "Base64url-encoded PaymentRequired JSON",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/x402/payment-webhook": {
+      "post": {
+        "summary": "Collection listener callback",
+        "description": "Receives a wallet, facilitator, Alchemy, or Infura callback and records the payment as waiting for manual approval.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "orderId",
+                  "transactionHash"
+                ],
+                "properties": {
+                  "orderId": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "paid",
+                      "settled",
+                      "pending"
+                    ]
+                  },
+                  "transactionHash": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Payment event accepted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/x402/track-transfer": {
+      "post": {
+        "summary": "Track and verify a real wallet transfer",
+        "description": "Records the MetaMask transaction hash, checks the selected network receipt, verifies either the ERC20 USDC Transfer log or the native transfer to the configured recipient, and marks the payment as waiting for manual plan approval after confirmation.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "orderId",
+                  "transactionHash"
+                ],
+                "properties": {
+                  "orderId": {
+                    "type": "string"
+                  },
+                  "transactionHash": {
+                    "type": "string",
+                    "pattern": "^0x[a-fA-F0-9]{64}$"
+                  },
+                  "payerAddress": {
+                    "type": "string",
+                    "description": "Optional connected wallet address used to narrow transfer-log matching. The platform does not require a fixed payer wallet.",
+                    "pattern": "^0x[a-fA-F0-9]{40}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Transfer accepted for tracking or already verified"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "502": {
+            "description": "Selected network RPC unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "cryptoken_session"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or expired session"
+      },
+      "Forbidden": {
+        "description": "Authenticated but role or control state is not allowed"
+      }
+    },
+    "schemas": {
+      "PaymentRequired": {
+        "type": "object",
+        "required": [
+          "x402Version",
+          "orderId",
+          "cartId",
+          "accepts"
+        ],
+        "properties": {
+          "x402Version": {
+            "type": "integer",
+            "const": 2
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "cartId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "payerPolicy": {
+            "type": "string",
+            "description": "Payment must be initiated from the currently connected wallet. The receiver address is fixed; the payer address is not hard-coded.",
+            "const": "connected-wallet"
+          },
+          "accepts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "scheme",
+                "network",
+                "asset",
+                "assetAddress",
+                "amount",
+                "recipientAddress",
+                "resource"
+              ],
+              "properties": {
+                "scheme": {
+                  "type": "string",
+                  "const": "exact"
+                },
+                "network": {
+                  "type": "string",
+                  "enum": [
+                    "ethereum-mainnet",
+                    "ethereum-sepolia",
+                    "arbitrum-one",
+                    "arbitrum-sepolia",
+                    "base",
+                    "base-sepolia",
+                    "op-mainnet",
+                    "op-sepolia",
+                    "polygon-pos",
+                    "polygon-amoy",
+                    "avalanche",
+                    "avalanche-fuji"
+                  ],
+                  "example": "arbitrum-sepolia"
+                },
+                "asset": {
+                  "type": "string",
+                  "example": "USDC"
+                },
+                "assetType": {
+                  "type": "string",
+                  "enum": [
+                    "erc20",
+                    "native"
+                  ],
+                  "example": "erc20"
+                },
+                "assetAddress": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ERC20 contract address when assetType is erc20; null when the selected payment asset is the network native coin.",
+                  "pattern": "^0x[a-fA-F0-9]{40}$"
+                },
+                "amount": {
+                  "type": "string",
+                  "example": "4.82"
+                },
+                "recipientAddress": {
+                  "type": "string",
+                  "pattern": "^0x[a-fA-F0-9]{40}$"
+                },
+                "resource": {
+                  "type": "string",
+                  "example": "/api/x402/settle"
+                },
+                "mimeType": {
+                  "type": "string",
+                  "example": "application/json"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SettlementEnvelope": {
+        "type": "object",
+        "properties": {
+          "settlement": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "orderId": {
+                "type": "string"
+              },
+              "transactionHash": {
+                "type": "string"
+              },
+              "nextAction": {
+                "type": "string",
+                "const": "manual_plan_approval_required"
+              }
+            }
+          },
+          "x402Payments": {
+            "type": "array"
+          },
+          "purchasePlan": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
+

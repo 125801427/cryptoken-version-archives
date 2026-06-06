@@ -1,0 +1,383 @@
+﻿{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cryptoken Agent Control API",
+    "version": "0.3.0",
+    "description": "Local API for account login, session checks, controlled agent actions, x402 cart payment, wallet authorization, cart approval, audit state, and role-based 401/403 responses."
+  },
+  "servers": [
+    { "url": "http://127.0.0.1:4010", "description": "Local API service" }
+  ],
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login with a local account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" },
+              "examples": {
+                "admin": { "value": { "username": "admin", "password": "Cryptoken@2026" } },
+                "operator": { "value": { "username": "operator", "password": "Operator@2026" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logged in and HttpOnly session cookie set",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthUserResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Read the current session user",
+        "responses": {
+          "200": {
+            "description": "Current user",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthUserResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Clear the current session",
+        "responses": {
+          "200": {
+            "description": "Logged out",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OkResponse" } } }
+          }
+        }
+      }
+    },
+    "/api/state": {
+      "get": {
+        "summary": "Read dashboard state",
+        "responses": {
+          "200": { "description": "Dashboard state and role permissions" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/agent/control": {
+      "post": {
+        "summary": "Submit a controlled agent action",
+        "operationId": "submitAgentControlAction",
+        "parameters": [
+          { "$ref": "#/components/parameters/AgentIdHeader" },
+          { "$ref": "#/components/parameters/TimestampHeader" },
+          { "$ref": "#/components/parameters/SignatureHeader" },
+          { "$ref": "#/components/parameters/IdempotencyKeyHeader" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AgentControlRequest" },
+              "examples": {
+                "createPlan": {
+                  "summary": "Create a pending purchase plan",
+                  "value": {
+                    "requestId": "req-20260602-0001",
+                    "clientAgentId": "acme-support-agent",
+                    "issuedAt": "2026-06-02T09:30:00+08:00",
+                    "signature": "hmac-sha256:cbce896372d302b5b6f546eb393b3b7b44d6d4e5b57fb1dc45c20537435ac7c1",
+                    "action": "purchase.cart.create",
+                    "payload": {
+                      "model": "DeepSeek V4 Pro",
+                      "maxBudgetUsd": 10,
+                      "triggerPriceUsdPerMTok": 0.435,
+                      "callbackUrl": "https://client.example.com/cryptoken/callback"
+                    }
+                  }
+                },
+                "emergencyStop": {
+                  "summary": "Request emergency stop",
+                  "value": {
+                    "requestId": "req-20260602-0003",
+                    "clientAgentId": "acme-support-agent",
+                    "issuedAt": "2026-06-02T09:32:00+08:00",
+                    "signature": "hmac-sha256:c7f62a07d137ba20bb0510c44abbbca0a2f8de265db8fc9f52b833d554ea6e1f",
+                    "action": "risk.emergency_stop",
+                    "payload": {
+                      "reason": "client risk signal",
+                      "scope": "wallet_and_pending_plans"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Action accepted into the pending approval or risk-control queue",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AgentActionAccepted" },
+                "examples": {
+                  "accepted": {
+                    "value": {
+                      "purchasePlan": {
+                        "id": "plan-deepseek-v4-pro-001",
+                        "modelName": "DeepSeek V4 Pro",
+                        "status": "Pending"
+                      },
+                      "permissions": { "canOperatePlans": true, "canManageSettings": false }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/plans": {
+      "post": {
+        "summary": "Create a purchase plan from the dashboard",
+        "responses": {
+          "202": { "description": "Plan created" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/plans/{id}/approve": {
+      "post": {
+        "summary": "Approve the pending purchase plan",
+        "parameters": [{ "$ref": "#/components/parameters/PlanIdPath" }],
+        "responses": {
+          "200": { "description": "Plan approved" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/plans/{id}/cancel": {
+      "post": {
+        "summary": "Cancel the pending purchase plan",
+        "parameters": [{ "$ref": "#/components/parameters/PlanIdPath" }],
+        "responses": {
+          "200": { "description": "Plan cancelled" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/risk/emergency-stop": {
+      "post": {
+        "summary": "Trigger emergency stop",
+        "responses": {
+          "200": { "description": "Emergency stop applied" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/AdminRequired" }
+        }
+      }
+    },
+    "/api/risk/resume": {
+      "post": {
+        "summary": "Resume after emergency stop",
+        "responses": {
+          "200": { "description": "Emergency stop cleared" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/AdminRequired" }
+        }
+      }
+    },
+    "/api/settings/agent-control": {
+      "post": {
+        "summary": "Enable or disable external agent control",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["enabled"],
+                "properties": { "enabled": { "type": "boolean" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Agent control updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/AdminRequired" }
+        }
+      }
+    },
+    "/api/wallet/authorization": {
+      "post": {
+        "summary": "Toggle wallet authorization",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["authorized"],
+                "properties": { "authorized": { "type": "boolean" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Wallet authorization updated" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/AdminRequired" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "AgentIdHeader": {
+        "name": "X-Cryptoken-Agent-Id",
+        "in": "header",
+        "required": false,
+        "schema": { "type": "string" },
+        "description": "Optional agent identifier. The request body clientAgentId is also accepted for local use."
+      },
+      "TimestampHeader": {
+        "name": "X-Cryptoken-Timestamp",
+        "in": "header",
+        "required": false,
+        "schema": { "type": "string", "format": "date-time" },
+        "description": "Optional timestamp used for signature verification in production."
+      },
+      "SignatureHeader": {
+        "name": "X-Cryptoken-Signature",
+        "in": "header",
+        "required": false,
+        "schema": { "type": "string" },
+        "description": "HMAC-SHA256 signature over requestId or body idempotencyKey or Idempotency-Key header, clientAgentId, issuedAt or X-Cryptoken-Timestamp, action, and canonical payload. The local default secret is cryptoken-local-demo-secret unless CRYPTOKEN_AGENT_SECRET is set."
+      },
+      "IdempotencyKeyHeader": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": false,
+        "schema": { "type": "string" },
+        "description": "Optional key for deduplicating client retries."
+      },
+      "PlanIdPath": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid action or payload",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "examples": { "bad": { "value": { "error": "Unsupported action", "message": "Unsupported action" } } } } }
+      },
+      "Unauthorized": {
+        "description": "Not logged in or invalid session",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "examples": { "unauthorized": { "value": { "error": "Unauthorized", "message": "Unauthorized" } } } } }
+      },
+      "Forbidden": {
+        "description": "Agent control disabled or role not allowed",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "examples": { "forbidden": { "value": { "error": "Forbidden", "message": "Forbidden" } }, "disabled": { "value": { "error": "Agent control is disabled", "message": "Agent control is disabled" } } } } }
+      },
+      "Conflict": {
+        "description": "Idempotency key was reused with a different request body",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "examples": { "conflict": { "value": { "error": "Idempotency key reused with different request", "message": "Idempotency key reused with different request" } } } } }
+      },
+      "AdminRequired": {
+        "description": "Admin role required",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "examples": { "adminRequired": { "value": { "error": "Forbidden", "message": "Forbidden" } } } } }
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": { "type": "string", "examples": ["admin"] },
+          "password": { "type": "string", "format": "password" }
+        }
+      },
+      "AuthUserResponse": {
+        "type": "object",
+        "required": ["user"],
+        "properties": {
+          "user": {
+            "type": "object",
+            "required": ["username", "role"],
+            "properties": {
+              "username": { "type": "string" },
+              "role": { "type": "string", "enum": ["admin", "operator"] },
+              "label": { "type": "string" }
+            }
+          }
+        }
+      },
+      "AgentControlRequest": {
+        "type": "object",
+        "required": ["requestId", "clientAgentId", "issuedAt", "action", "payload"],
+        "properties": {
+          "requestId": { "type": "string", "examples": ["req-20260602-0001"] },
+          "clientAgentId": { "type": "string", "examples": ["acme-support-agent"] },
+          "issuedAt": { "type": "string", "format": "date-time" },
+          "signature": { "type": "string", "examples": ["hmac-sha256:cbce896372d302b5b6f546eb393b3b7b44d6d4e5b57fb1dc45c20537435ac7c1"] },
+          "action": {
+            "type": "string",
+            "enum": [
+              "purchase.cart.create",
+              "purchase.cart.cancel",
+              "purchase.plan.create",
+              "purchase.plan.cancel",
+              "risk.emergency_stop",
+              "wallet.authorization.request"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "model": { "type": "string", "examples": ["DeepSeek V4 Pro"] },
+              "maxBudgetUsd": { "type": "number", "minimum": 0 },
+              "triggerPriceUsdPerMTok": { "type": "number", "minimum": 0 },
+              "callbackUrl": { "type": "string", "format": "uri" },
+              "planId": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        }
+      },
+      "AgentActionAccepted": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "purchasePlan": { "type": "object", "additionalProperties": true },
+          "permissions": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "OkResponse": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean" } }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -7,7 +7,6 @@ export type MarketModel = {
   inputPriceUsd: number;
   outputPriceUsd: number;
   cachedInputPriceUsd?: number;
-  tokenPriceCrypto: string;
   unit: string;
   inventory: number;
   change24h: number;

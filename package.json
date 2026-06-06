@@ -1,12 +1,15 @@
 ﻿{
   "name": "cryptoken",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "api": "node server/index.mjs",
+    "dev:all": "node server/dev-all.mjs",
     "build": "next build --webpack",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "node server/static.mjs",
+    "start:all": "node server/prod-all.mjs",
+    "lint": "eslint src server"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
