@@ -1,36 +1,34 @@
-﻿This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cryptoken
 
-## Getting Started
+Cryptoken is a dashboard prototype for AI-agent token treasury operations. The first source layout focuses on the frontend experience and the purchase workflow that later connects to local API, payment, and approval services.
 
-First, run the development server:
+## Current Scope
 
-```bash
+- Dashboard views for model usage, wallet status, risk state, and transaction activity.
+- Static model market data for evaluating the operating flow.
+- Early purchase workflow notes in `docs/purchase-workflow.md`.
+- Frontend implementation based on Next.js, React, and Recharts.
+
+## Local Development
+
+```powershell
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the local frontend:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://127.0.0.1:3000/
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Planned Backend Work
 
-## Learn More
+- Local session and role service.
+- Persistent purchase cart state.
+- x402-style payment request and transfer verification endpoints.
+- Operator and administrator approval boundaries.
 
-To learn more about Next.js, take a look at the following resources:
+## Security Notes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This repository is intended for controlled local or intranet demonstrations. Runtime state, local credentials, wallet secrets, and generated build outputs should not be committed.

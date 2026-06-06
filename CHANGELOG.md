@@ -1,4 +1,9 @@
-﻿# Changelog
+# Changelog
+
+## 0.1.1
+
+- Added purchase workflow documentation.
+- Clarified the planned backend and approval boundaries.
 
 ## 0.1.0
 
