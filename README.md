@@ -48,6 +48,14 @@ npm run build
 npm run start:all
 ```
 
+## Local Verification
+
+After both services are running, the local verification helper checks the frontend, API health, and session guard:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-local.ps1
+```
+
 ## Windows Intranet Start Script
 
 The repository includes a Windows helper script for local or intranet deployment:
@@ -77,10 +85,6 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-cryptoken-windows.ps1 -
 
 - `public/agent-control.openapi.json`
 - `public/x402-protocol.openapi.json`
-
-## Workflow Notes
-
-- `docs/purchase-workflow.md`
 
 ## Security Notes
 
