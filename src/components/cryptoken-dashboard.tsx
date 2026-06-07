@@ -13,6 +13,7 @@ import {
   Copy,
   ExternalLink,
   Gauge,
+  Github,
   LockKeyhole,
   LogOut,
   Mail,
@@ -177,6 +178,14 @@ type EthereumProvider = {
 };
 
 const apiBase = (process.env.NEXT_PUBLIC_AGENT_API_BASE || "http://127.0.0.1:4010").replace(/\/$/, "");
+const publicBasePath = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
+const githubArchiveUrl = "https://github.com/125801427/cryptoken-version-archives";
+
+function publicAsset(path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${publicBasePath}${normalizedPath}`;
+}
+
 const settlementNetworks: Record<
   SettlementNetworkId,
   {
@@ -735,7 +744,7 @@ function BrandLogo({ size = "md" }: Readonly<{ size?: "sm" | "md" | "lg" }>) {
 
   return (
     <Image
-      src="/cryptoken-logo.jpg"
+      src={publicAsset("/cryptoken-logo.jpg")}
       alt="Cryptoken"
       width={imageSize}
       height={imageSize}
@@ -922,6 +931,15 @@ function LoginScreen({
         >
           {busy ? "登录中" : "登录"}
         </button>
+        <div className="rounded-md bg-stone-50 p-3 text-[16px] leading-7 text-stone-600" data-testid="login-demo-accounts">
+          <p className="font-medium text-stone-800">PS 演示账号</p>
+          <p>
+            管理员：<span className="font-mono text-stone-950">admin / Cryptoken@2026</span>
+          </p>
+          <p>
+            操作员：<span className="font-mono text-stone-950">operator / Operator@2026</span>
+          </p>
+        </div>
       </form>
     </AuthShell>
   );
@@ -935,8 +953,8 @@ export default function CryptokenDashboard() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
   const [user, setUser] = useState<AuthUser | null>(null);
   const [appState, setAppState] = useState<DashboardState | null>(null);
-  const [loginUsername, setLoginUsername] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+  const [loginUsername, setLoginUsername] = useState("admin");
+  const [loginPassword, setLoginPassword] = useState("Cryptoken@2026");
   const [loginError, setLoginError] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
@@ -1041,7 +1059,6 @@ export default function CryptokenDashboard() {
       window.localStorage.setItem("cryptoken-session", "1");
       setPlanSelected(["Pending", "WaitingApproval"].includes(state.purchaseCart.status));
       setAuthStatus("ready");
-      setLoginPassword("");
       setActionNote("登录成功。");
     } catch (error) {
       const apiError = error as ApiError;
@@ -1612,7 +1629,7 @@ export default function CryptokenDashboard() {
 
   const handleAgentEndpoint = (endpoint: (typeof agentAccessEndpoints)[number]) => {
     if (endpoint.value.includes("/agent-control.openapi.json")) {
-      window.open("/agent-control.openapi.json", "_blank", "noopener,noreferrer");
+      window.open(publicAsset("/agent-control.openapi.json"), "_blank", "noopener,noreferrer");
       setActionNote("已打开 OpenAPI 契约。");
       return;
     }
@@ -1627,7 +1644,7 @@ export default function CryptokenDashboard() {
 
   const handleX402Endpoint = (endpoint: (typeof x402Endpoints)[number]) => {
     if (endpoint.value.includes("/x402-protocol.openapi.json")) {
-      window.open("/x402-protocol.openapi.json", "_blank", "noopener,noreferrer");
+      window.open(publicAsset("/x402-protocol.openapi.json"), "_blank", "noopener,noreferrer");
       setActionNote("已打开 x402 OpenAPI。");
       return;
     }
@@ -2002,6 +2019,26 @@ export default function CryptokenDashboard() {
         </header>
 
         <div className="space-y-5 p-4 sm:p-6">
+          <section className={cn("scroll-mt-28", activeSection !== "overview" && "hidden")} data-testid="github-repository-link">
+            <a
+              className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-stone-950 bg-stone-950 px-4 py-3 text-white shadow-[0_16px_42px_rgba(28,25,23,0.16)] transition hover:bg-stone-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/30"
+              href={githubArchiveUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <Github className="shrink-0" size={22} />
+                <span className="min-w-0">
+                  <span className="block text-[17px] font-semibold">GitHub 公开仓库</span>
+                  <span className="mt-1 block text-[16px] leading-6 text-stone-200">
+                    源码与 demo 演示视频都在这个链接中，README 里有清晰的视频入口。
+                  </span>
+                </span>
+              </span>
+              <ExternalLink className="shrink-0" size={20} />
+            </a>
+          </section>
+
           <section id="overview" className={cn("grid scroll-mt-28 gap-4 md:grid-cols-2 xl:grid-cols-4", activeSection !== "overview" && "hidden")}>
             {overviewCards.map((card) => (
               <OverviewCard key={card.label} {...card} />

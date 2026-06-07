@@ -6,7 +6,9 @@ Cryptoken is a local demo platform for AI-agent token treasury operations. It co
 
 <video src="public/media/cryptoken-dashboard-demo.mp4" controls width="100%"></video>
 
-[Open the dashboard walkthrough video](public/media/cryptoken-dashboard-demo.mp4)
+The repository includes the demo walkthrough video in the public media folder. Use either the embedded player above or the direct file link below.
+
+**Demo video:** [Open `public/media/cryptoken-dashboard-demo.mp4`](public/media/cryptoken-dashboard-demo.mp4)
 
 ## Features
 
