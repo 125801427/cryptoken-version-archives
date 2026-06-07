@@ -13,7 +13,6 @@ import {
   Copy,
   ExternalLink,
   Gauge,
-  Github,
   LockKeyhole,
   LogOut,
   Mail,
@@ -180,6 +179,7 @@ type EthereumProvider = {
 const apiBase = (process.env.NEXT_PUBLIC_AGENT_API_BASE || "http://127.0.0.1:4010").replace(/\/$/, "");
 const publicBasePath = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
 const githubArchiveUrl = "https://github.com/125801427/cryptoken-version-archives";
+const demoVideoUrl = "https://www.bilibili.com/video/BV1vcEx6VEGN/?vd_source=a0baab210e21ebd2e4f88e7c2752ecc8";
 
 function publicAsset(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -2019,7 +2019,7 @@ export default function CryptokenDashboard() {
         </header>
 
         <div className="space-y-5 p-4 sm:p-6">
-          <section className={cn("scroll-mt-28", activeSection !== "overview" && "hidden")} data-testid="github-repository-link">
+          <section className={cn("grid scroll-mt-28 gap-3 lg:grid-cols-2", activeSection !== "overview" && "hidden")} data-testid="home-resource-links">
             <a
               className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-stone-950 bg-stone-950 px-4 py-3 text-white shadow-[0_16px_42px_rgba(28,25,23,0.16)] transition hover:bg-stone-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/30"
               href={githubArchiveUrl}
@@ -2027,7 +2027,7 @@ export default function CryptokenDashboard() {
               rel="noreferrer"
             >
               <span className="flex min-w-0 items-center gap-3">
-                <Github className="shrink-0" size={22} />
+                <ExternalLink className="shrink-0" size={22} />
                 <span className="min-w-0">
                   <span className="block text-[17px] font-semibold">GitHub 公开仓库</span>
                   <span className="mt-1 block text-[16px] leading-6 text-stone-200">
@@ -2036,6 +2036,24 @@ export default function CryptokenDashboard() {
                 </span>
               </span>
               <ExternalLink className="shrink-0" size={20} />
+            </a>
+            <a
+              className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sky-950 shadow-[0_16px_42px_rgba(28,25,23,0.08)] transition hover:bg-sky-100 focus:outline-none focus:ring-4 focus:ring-sky-500/30"
+              href={demoVideoUrl}
+              target="_blank"
+              rel="noreferrer"
+              data-testid="demo-video-link"
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <Play className="shrink-0 text-sky-700" size={22} />
+                <span className="min-w-0">
+                  <span className="block text-[17px] font-semibold">Demo 演示视频</span>
+                  <span className="mt-1 block text-[16px] leading-6 text-sky-800">
+                    打开 B 站演示视频，快速查看完整平台流程。
+                  </span>
+                </span>
+              </span>
+              <ExternalLink className="shrink-0 text-sky-700" size={20} />
             </a>
           </section>
 
