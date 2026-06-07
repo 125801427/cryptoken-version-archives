@@ -14,7 +14,8 @@ const sessionMaxAgeSeconds = 60 * 60 * 24;
 const sessionMaxAgeMs = sessionMaxAgeSeconds * 1000;
 const agentSignatureSecret = process.env.CRYPTOKEN_AGENT_SECRET || "cryptoken-local-demo-secret";
 const defaultSettlementNetwork = process.env.CRYPTOKEN_SETTLEMENT_NETWORK || "arbitrum-sepolia";
-const receiverWalletAddress = process.env.CRYPTOKEN_RECEIVER_ADDRESS || "<RECEIVER_WALLET_ADDRESS>";
+const placeholderReceiverWalletAddress = "0x0000000000000000000000000000000000000000";
+const receiverWalletAddress = process.env.CRYPTOKEN_RECEIVER_ADDRESS || placeholderReceiverWalletAddress;
 const erc20TransferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const settlementNetworks = {
   "arbitrum-sepolia": {
@@ -128,7 +129,6 @@ const settlementNetworks = {
 };
 const legacyReceiverWalletAddresses = new Set([
   "0x7e1200000000000000000000000000000000a94f",
-  "<PAYER_WALLET_ADDRESS>",
 ]);
 let statefulRequestQueue = Promise.resolve();
 
@@ -935,6 +935,11 @@ function buildX402PaymentRequired(state) {
   };
 }
 
+function receiverWalletConfigured(state) {
+  const address = normalizeAddress(state.settings.walletAddress);
+  return Boolean(address && address !== placeholderReceiverWalletAddress);
+}
+
 function latestX402Payment(state, orderId) {
   return (Array.isArray(state.x402Payments) ? state.x402Payments : []).find((payment) => payment.orderId === orderId) || null;
 }
@@ -973,6 +978,9 @@ function recordX402Payment(state, { orderId, transactionHash, paymentSignature, 
 }
 
 function sendX402PaymentRequired(req, res, state) {
+  if (!receiverWalletConfigured(state)) {
+    return sendError(req, res, 400, "Receiver wallet address is not configured. Set CRYPTOKEN_RECEIVER_ADDRESS before requesting payment.");
+  }
   const paymentRequired = buildX402PaymentRequired(state);
   return sendJson(req, res, 402, paymentRequired, {
     "PAYMENT-REQUIRED": base64Json(paymentRequired),

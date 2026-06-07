@@ -2,6 +2,12 @@
 
 Cryptoken is a local demo platform for AI-agent token treasury operations. It combines a Next.js dashboard with a lightweight Node.js API for account login, role-based approvals, multi-model purchase carts, wallet/payment flow orchestration, and x402-style payment verification.
 
+## Product Walkthrough
+
+<video src="public/media/cryptoken-dashboard-demo.mp4" controls width="100%"></video>
+
+[Open the dashboard walkthrough video](public/media/cryptoken-dashboard-demo.mp4)
+
 ## Features
 
 - Local login with administrator and operator roles.
@@ -64,7 +70,7 @@ The repository includes a Windows helper script for local or intranet deployment
 powershell -ExecutionPolicy Bypass -File .\scripts\start-cryptoken-windows.ps1
 ```
 
-For a fixed LAN host:
+For a fixed LAN host, pass the host or IP that should be embedded in the static frontend build:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\start-cryptoken-windows.ps1 -LanHost 127.0.0.1
